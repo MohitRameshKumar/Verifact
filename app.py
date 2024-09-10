@@ -5,7 +5,7 @@ import openai
 app = Flask(__name__)
 
 # Your OpenAI API key
-openai.api_key = "sk-qZlGEXnebG2pvIsxzUKKRMSyow3Zrm3VsExJOlhmqMT3BlbkFJb07Eqo5TlxQElJbNckhxckUx0i819onFoiCGuNsYUA"
+openai.api_key = ""
 
 def get_transcript_text_only(video_id):
     try:
@@ -13,17 +13,19 @@ def get_transcript_text_only(video_id):
         text_only = [entry['text'] for entry in transcript]
         return "\n".join(text_only)
     except Exception as e:
+        print(f"Error fetching transcript: {e}")
         return None
 
 def get_chatgpt_response(prompt):
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1000
+            max_tokens=2000
         )
         return response['choices'][0]['message']['content']
     except Exception as e:
+        print(f"Error in OpenAI request: {e}")
         return f"Error: {e}"
 
 @app.route('/')
@@ -32,22 +34,22 @@ def index():
 
 @app.route('/process', methods=['POST'])
 def process_video_id():
-    video_id = request.form.get('video_id')
+    video_id = request.form["video_id"] 
+
+
     
     if not video_id:
         return jsonify({'output': 'No video ID provided'}), 400
     
+    print(f"Received video ID: {video_id}")
+    
     transcript_text = get_transcript_text_only(video_id)
     
     if transcript_text is None:
-        return jsonify({'output': 'Failed to fetch transcript'}), 500
+        return jsonify({'output': f'Failed to fetch transcript for video ID: {video_id}'}), 500
     
     # ChatGPT prompt
-    instruction = ("Imagine you are a fact-checker for political debates. Analyze the chunk of text sent within the quotation marks "
-                   "and scan for complete ideas (these can be in one sentence or multiple sentences). These statements are from the "
-                   "Joe Biden vs. Donald Trump 2020 Presidential debate. Use your knowledge to determine if each complete idea is true or false. "
-                   "Output the sentence(s) you are checking and either 'true' or 'false'. Also include who said the statement. "
-                   "If it sounds like an opinion, output 'opinion'. If the idea is just a general statement, output 'general'.")
+    instruction = ("Imagine you are a fact-checker for political debates. Analyze the transcript sent between the quotation marks '' and look for sentences with complete ideas. Using your knowledge, check if the complete idea is true, false, an opinion, or a general statement. Give me the output in the form of 'Speaker: Sentences that form the complete idea (if it is true, false, general, or opinion)'. This transcript is from the 2020 presidential debate from biden and trump.")
     
     prompt = f"{instruction}\n'{transcript_text}'"
     

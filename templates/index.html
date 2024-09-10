@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
+<h1>VERIFACT</h1>
+<h3>Fact Check Political Debates</h3>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -44,13 +46,18 @@
             height: 315px;
             margin-top: 20px;
         }
+        h1{
+            color: black;
+            font-size: 50px;
+            margin-bottom: 1px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Video ID Processor</h1>
-    <form id="videoForm">
+    <form action = "/process" id="videoForm" method="POST">
         <input type="text" id="video_id" name="video_id" placeholder="Enter Video ID" required>
         <button type="submit">Submit</button>
     </form>
@@ -66,6 +73,9 @@
     document.getElementById('videoForm').addEventListener('submit', function(e) {
         e.preventDefault();
         var videoID = document.getElementById('video_id').value;
+
+        // Log videoID for debugging
+        console.log("Video ID:", videoID);
         
         // Embed the YouTube video using the provided video ID
         var videoEmbedUrl = 'https://www.youtube.com/embed/' + videoID;
@@ -73,18 +83,22 @@
         videoContainer.innerHTML = '<iframe src="' + videoEmbedUrl + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
         
         // Send the video ID to the backend for processing
+        let formData = new URLSearchParams();
+        formData.append('video_id', videoID);
+        
         fetch('/process', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'video_id=' + encodeURIComponent(videoID),
+            body: formData.toString(),
         })
         .then(response => response.json())
         .then(data => {
             document.getElementById('result').innerText = data.output;
         })
         .catch(error => {
+            console.error('Error:', error);
             document.getElementById('result').innerText = 'Error processing video ID';
         });
     });
